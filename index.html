@@ -3,26 +3,348 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Blackey Boss</title>
+<title>Blackey Boss Predictor</title>
 <style>
-body { font-family: Arial; background: #111; color: #0f0; text-align: center; padding: 50px; }
-h1 { font-size: 3rem; }
-input { padding: 15px; font-size: 1rem; border-radius: 10px; border: none; }
-button { padding: 15px 30px; font-size: 1rem; background: #ffd700; border: none; border-radius: 10px; cursor: pointer; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg,#0a0a1a,#0d1f0d,#1a0033);
+  color:#fff; min-height:100vh; padding:15px;
+  display:flex; flex-direction:column; align-items:center;
+}
+#loginOverlay {
+  position:fixed; inset:0; background:rgba(10,5,30,0.96);
+  z-index:9999; display:flex; justify-content:center; align-items:center;
+}
+.login-box {
+  background:linear-gradient(145deg,#0f0f2a,#0a1a0a);
+  padding:40px 30px; border-radius:30px;
+  border:2px solid #b8860b; text-align:center;
+  width:90%; max-width:380px;
+  box-shadow:0 0 40px rgba(0,255,100,0.3);
+}
+.login-box h2 { color:#00ff88; margin-bottom:20px; }
+.login-box input {
+  width:100%; padding:15px; margin-bottom:20px;
+  background:rgba(255,255,255,0.07);
+  border:1px solid #00ff88; color:#fff;
+  border-radius:12px; outline:none; text-align:center;
+  font-size:1.1rem;
+}
+.login-box button {
+  width:100%; padding:15px;
+  background:linear-gradient(45deg,#b8860b,#ffd700);
+  border:none; color:#000; font-weight:900;
+  border-radius:12px; cursor:pointer; font-size:1rem;
+}
+.main-container {
+  width:100%; max-width:450px; background:#fff;
+  border-radius:30px; padding:20px;
+  border:3px solid #00ff88; color:#333;
+  margin-top:20px;
+}
+.header {
+  font-size:1.4rem; text-align:center;
+  margin-bottom:15px; font-weight:900;
+  color:#00aa55;
+}
+.trend-timer {
+  text-align:center; font-weight:900;
+  color:#ff4444; font-size:1.2rem; margin-bottom:15px;
+}
+.results-container {
+  display:flex; gap:8px; overflow-x:auto;
+  padding-bottom:15px; margin-bottom:15px;
+}
+.res-circle {
+  min-width:45px; height:45px; border-radius:50%;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  flex-shrink:0; font-weight:900;
+  background:#f0f0f0; border:2px solid #00aa55;
+  color:#111; font-size:1rem;
+}
+.predict-card {
+  background:#f9f9f9; border-radius:20px;
+  padding:20px; margin-bottom:20px;
+  border:1px solid #8b00ff;
+}
+.info-row {
+  font-size:0.9rem; margin-bottom:10px;
+  color:#333; font-weight:700;
+  display:flex; justify-content:space-between;
+  flex-wrap:wrap; gap:5px;
+}
+.prediction-display {
+  text-align:center; padding:20px;
+  border-radius:15px; background:#fff;
+  border:2px solid #b8860b;
+}
+.pred-res {
+  font-size:2.5rem; font-weight:900; color:#00aa55;
+}
+.pred-num {
+  color:#8b00ff; margin-top:10px;
+  font-size:1.8rem; font-weight:900;
+  letter-spacing:5px;
+}
+.open-history-btn {
+  width:100%; padding:13px;
+  background:linear-gradient(45deg,#0d1f0d,#1a0033);
+  border:2px solid #00ff88; color:#00ff88;
+  font-weight:900; border-radius:12px;
+  cursor:pointer; font-size:1rem;
+}
+.history-section {
+  position:fixed; inset:0; z-index:8000;
+  display:none; flex-direction:column;
+  background:#f5f5f5;
+}
+.history-section.active { display:flex; }
+.history-topbar {
+  display:flex; justify-content:space-between;
+  padding:15px 20px; background:#0a0a1a;
+}
+.history-topbar-title {
+  color:#00ff88; font-weight:900; font-size:1.1rem;
+}
+.close-history-btn {
+  background:#8b00ff; border:none;
+  color:#fff; font-weight:900;
+  padding:8px 18px; border-radius:10px;
+  cursor:pointer;
+}
+.stats-bar {
+  display:flex; gap:10px; padding:12px;
+  background:#1a0033; justify-content:space-around;
+}
+.stat-item { text-align:center; }
+.stat-label {
+  font-size:0.65rem; color:#aaa;
+  text-transform:uppercase;
+}
+.stat-value { font-size:1.1rem; font-weight:900; }
+.stat-win { color:#ff69b4; }
+.stat-loss { color:#ff4444; }
+.stat-jackpot { color:#bf5fff; }
+.stat-total { color:#fff; }
+.history-scroll-area {
+  flex:1; overflow-y:auto; padding:15px;
+}
+table { width:100%; border-collapse:collapse; }
+th {
+  background:#eee; color:#333;
+  padding:12px; font-size:0.8rem;
+}
+td {
+  padding:10px; text-align:center;
+  border-bottom:1px solid #eee;
+  font-size:0.85rem; color:#222;
+}
+.status-badge {
+  padding:4px 10px; border-radius:5px;
+  font-weight:900; font-size:0.75rem; color:#fff;
+}
+.win-bg { background:#ff69b4; }
+.loss-bg { background:#d9534f; }
+.jackpot-bg { background:#8b00ff; }
+.pending-bg { background:#999; }
+.sound-popup {
+  position:fixed; top:20px; left:50%;
+  transform:translateX(-50%) translateY(-120px);
+  z-index:99999; padding:12px 28px;
+  border-radius:30px; font-weight:900;
+  transition:transform 0.4s ease;
+  pointer-events:none;
+}
+.sound-popup.show { transform:translateX(-50%) translateY(0); }
+.win-popup { background:#ff69b4; color:#fff; }
+.loss-popup { background:#d9534f; color:#fff; }
+.jackpot-popup { background:linear-gradient(45deg,#8b00ff,#ff00ff); color:#fff; }
 </style>
 </head>
 <body>
-<h1>💚 BLACKEY BOSS 💚</h1>
-<input type="text" id="key" placeholder="Key..." />
-<button onclick="check()">Unlock</button>
-<p id="msg"></p>
+
+<div class="sound-popup" id="soundPopup"></div>
+
+<div id="loginOverlay">
+  <div class="login-box">
+    <h2>💚 BLACKY BOSS 💚</h2>
+    <input type="text" id="accessKey" placeholder="KEY..." />
+    <button onclick="checkAuth()">Unlock Predictor</button>
+  </div>
+</div>
+
+<div class="history-section" id="historySection">
+  <div class="history-topbar">
+    <div class="history-topbar-title">📊 HISTORY</div>
+    <button class="close-history-btn" onclick="closeHistory()">✕ CLOSE</button>
+  </div>
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-label">WIN</div><div class="stat-value stat-win" id="statWin">0</div></div>
+    <div class="stat-item"><div class="stat-label">LOSS</div><div class="stat-value stat-loss" id="statLoss">0</div></div>
+    <div class="stat-item"><div class="stat-label">JACKPOT</div><div class="stat-value stat-jackpot" id="statJackpot">0</div></div>
+    <div class="stat-item"><div class="stat-label">TOTAL</div><div class="stat-value stat-total" id="statTotal">0</div></div>
+  </div>
+  <div class="history-scroll-area">
+    <table>
+      <thead>
+        <tr><th>#</th><th>PERIOD</th><th>B/S</th><th>NUMS</th><th>RESULT</th></tr>
+      </thead>
+      <tbody id="historyBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="main-wrapper" id="mainWrapper" style="display:none;width:100%;max-width:450px;">
+  <div class="main-container">
+    <div class="header">💚 BLACKY BOSS 💚</div>
+    <div class="trend-timer" id="trendTime">NEXT UPDATE IN: 00:60</div>
+    <div class="results-container" id="liveResults"></div>
+    <div class="predict-card">
+      <div class="info-row">
+        <span>PERIOD:- <span id="period1M">---</span></span>
+        <span>UNDER 2 LEVEL BOOM 🤯</span>
+      </div>
+      <div class="prediction-display">
+        <div id="res1M" class="pred-res">WAITING</div>
+        <div id="num1M" class="pred-num">--</div>
+      </div>
+    </div>
+    <button class="open-history-btn" onclick="openHistory()">
+      📊 VIEW HISTORY (<span id="historyCountBtn">0</span>)
+    </button>
+  </div>
+</div>
+
 <script>
-function check(){
-  if(document.getElementById('key').value === 'BLACKY999'){
-    document.getElementById('msg').textContent = '✅ Unlocked! Predictor working!';
-  } else {
-    document.getElementById('msg').textContent = '❌ Wrong Key';
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function tone(ctx, type, freq, start, dur, vol) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, ctx.currentTime+start);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+start+dur);
+  o.start(ctx.currentTime+start); o.stop(ctx.currentTime+start+dur+0.05);
+}
+function playWinSound() { try { const c=getCtx(); [523,659,784,1047].forEach((f,i)=>tone(c,'sine',f,i*0.12,0.4,0.25)); } catch(e){} }
+function playLossSound() { try { const c=getCtx(); [300,250,200].forEach((f,i)=>tone(c,'sawtooth',f,i*0.18,0.35,0.2)); } catch(e){} }
+function playJackpotSound() {
+  try {
+    const c=getCtx();
+    [523,659,784,1047,1319,1568].forEach((f,i)=>tone(c,'triangle',f,i*0.1,0.3,0.3));
+  } catch(e){}
+}
+function showPopup(type, text) {
+  const el = document.getElementById('soundPopup');
+  el.className = 'sound-popup '+type+'-popup';
+  el.textContent = text;
+  setTimeout(()=>el.classList.add('show'),10);
+  setTimeout(()=>el.classList.remove('show'),2600);
+}
+
+const SECRET_KEY = "BLACKY999";
+let myHistory = [], currentPeriod = 20261014000;
+
+function checkAuth() {
+  if (document.getElementById('accessKey').value === SECRET_KEY) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('mainWrapper').style.display = 'block';
+    initApp();
+  } else alert("Wrong Key!");
+}
+function openHistory() { document.getElementById('historySection').classList.add('active'); }
+function closeHistory() { document.getElementById('historySection').classList.remove('active'); }
+
+function initApp() {
+  generateResult();
+  setInterval(generateResult, 60000);
+  startTimer();
+}
+
+function startTimer() {
+  setInterval(() => {
+    const s = 60 - new Date().getSeconds();
+    document.getElementById('trendTime').textContent = `NEXT UPDATE IN: 00:${s<10?'0'+s:s}`;
+  }, 1000);
+}
+
+function generateResult() {
+  const list = [];
+  for (let i = 0; i < 10; i++) {
+    list.push({
+      number: String(Math.floor(Math.random() * 10)),
+      issueNumber: String(currentPeriod - i)
+    });
   }
+
+  document.getElementById('liveResults').innerHTML = list.map(item => `
+    <div class="res-circle">${item.number}
+      <small style="font-size:0.5rem;color:#00aa55">${item.issueNumber.slice(-3)}</small>
+    </div>`).join('');
+
+  const nums = list.map(i=>parseInt(i.number));
+  const avg = nums.slice(0,5).reduce((a,b)=>a+b,0)/5;
+  let size = avg >= 4.5 ? "SMALL" : "BIG";
+  let pool;
+  if (size === "BIG") {
+    let b = (nums[0] + 2) % 5; pool = [b, (b+2)%5];
+  } else {
+    let b = 5 + ((nums[0] + 3) % 5); pool = [b, (b+1)>9?5:b+1];
+  }
+
+  myHistory.forEach(h => {
+    if (h.status === "Pending") {
+      const r = Math.random();
+      if (r < 0.15) h.status = "JACKPOT";
+      else if (r < 0.60) h.status = "WIN✅";
+      else h.status = "LOSS";
+      if (h.status === "JACKPOT") { playJackpotSound(); showPopup('jackpot','🎰 JACKPOT!! 🎰'); }
+      else if (h.status === "WIN✅") { playWinSound(); showPopup('win','✅ WIN!'); }
+      else { playLossSound(); showPopup('loss','❌ LOSS'); }
+    }
+  });
+
+  currentPeriod++;
+  const p = {
+    period: String(currentPeriod),
+    periodDisplay: String(currentPeriod).slice(-3),
+    predict: size,
+    numbers: pool.sort((a,b)=>a-b),
+    status: "Pending"
+  };
+  myHistory.unshift(p);
+
+  document.getElementById('period1M').textContent = p.periodDisplay;
+  document.getElementById('res1M').textContent = size;
+  document.getElementById('num1M').textContent = p.numbers.join(" - ");
+
+  document.getElementById('historyBody').innerHTML = myHistory.map((h,i) => {
+    const bc = h.status==='WIN✅'?'win-bg':h.status==='LOSS'?'loss-bg':h.status==='JACKPOT'?'jackpot-bg':'pending-bg';
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${h.periodDisplay}</td>
+      <td style="font-weight:bold;color:#00aa55">${h.predict}</td>
+      <td style="color:#8b00ff;font-weight:bold">${h.numbers.join(", ")}</td>
+      <td><span class="status-badge ${bc}">${h.status}</span></td>
+    </tr>`;
+  }).join('');
+
+  let w=0,l=0,j=0;
+  myHistory.forEach(h => {
+    if(h.status==='WIN✅') w++;
+    else if(h.status==='LOSS') l++;
+    else if(h.status==='JACKPOT') j++;
+  });
+  document.getElementById('statWin').textContent = w;
+  document.getElementById('statLoss').textContent = l;
+  document.getElementById('statJackpot').textContent = j;
+  document.getElementById('statTotal').textContent = myHistory.length;
+  document.getElementById('historyCountBtn').textContent = myHistory.length;
 }
 </script>
 </body>
